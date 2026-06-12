@@ -230,24 +230,6 @@
             background: #c62828;
         }
 
-        .mass-area {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #2a2a2a;
-        }
-
-        .mass-input {
-            width: 100%;
-            height: 80px;
-            background: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 6px;
-            color: white;
-            padding: 10px;
-            font-family: monospace;
-            margin: 10px 0;
-        }
-
         .info-window {
             background: #1a1a1a;
             padding: 8px;
@@ -273,12 +255,6 @@
                     <input type="number" id="digitarNumero" min="0" max="36" placeholder="0-36" style="flex:1; padding:10px; background:#1a1a1a; border:1px solid #333; border-radius:6px; color:white;">
                     <button id="btnAdicionar" class="primary">ADICIONAR</button>
                     <button id="btnReset" class="danger">REINICIAR</button>
-                </div>
-                
-                <div class="mass-area">
-                    <div style="font-size:13px; margin-bottom:5px;">📋 ADICIONAR VÁRIOS NÚMEROS DE UMA VEZ:</div>
-                    <textarea id="massNumbers" class="mass-input" placeholder="Ex: 21,5,14,32,5,21,10,15,21,4,20"></textarea>
-                    <button id="btnMassa" class="primary">📥 ADICIONAR EM MASSA</button>
                 </div>
             </div>
 
@@ -394,7 +370,6 @@
 
     // ============================================
     // FUNÇÃO PARA OBTER A JANELA DOS ÚLTIMOS 50 NÚMEROS
-    // Retorna os números e também o índice de início no histórico original
     // ============================================
     function getJanelaHistorico() {
         const inicio = Math.max(0, historico.length - JANELA_MAX);
@@ -408,12 +383,7 @@
     function analisarPuxadas(numeroAtual) {
         if (historico.length < 2) return [];
         
-        // Pega a janela dos últimos 50 números
-        const { janela, inicio } = getJanelaHistorico();
-        
-        // O número atual é o último da janela (se a janela tiver números)
-        // IMPORTANTE: O número atual NÃO pode ser analisado como ocorrência antiga
-        // porque ele acabou de ser adicionado. Só analisamos ocorrências ANTES da última posição da janela.
+        const { janela } = getJanelaHistorico();
         
         // Encontra posições onde o número apareceu DENTRO DA JANELA
         // EXCLUINDO a última posição (que é o número que acabamos de adicionar)
@@ -426,7 +396,6 @@
         
         if (posicoes.length === 0) return [];
         
-        // Mapeia alvos
         const numeroParaGrupo = {};
         for (let g = 1; g <= 5; g++) {
             grupos[g].forEach(num => {
@@ -435,7 +404,6 @@
             });
         }
         
-        // Mapeia vizinhos
         const vizinhoParaGrupo = {};
         for (let g = 1; g <= 5; g++) {
             grupos[g].forEach(alvo => {
@@ -451,14 +419,12 @@
         
         const puxadas = {};
         
-        // Para CADA posição do número dentro da janela, olhar SOMENTE A PRÓXIMA CASA
         for (const pos of posicoes) {
             const proximaPos = pos + 1;
             if (proximaPos >= janela.length) continue;
             
             const numeroPuxado = janela[proximaPos];
             
-            // Verifica se é ALVO
             if (numeroParaGrupo[numeroPuxado]) {
                 numeroParaGrupo[numeroPuxado].forEach(g => {
                     const key = `${g}-A`;
@@ -469,7 +435,6 @@
                 });
             }
             
-            // Verifica se é VIZINHO
             if (vizinhoParaGrupo[numeroPuxado]) {
                 vizinhoParaGrupo[numeroPuxado].forEach(g => {
                     const key = `${g}-V`;
@@ -481,7 +446,6 @@
             }
         }
         
-        // Converter para array
         const alertas = [];
         for (const key in puxadas) {
             const data = puxadas[key];
@@ -514,7 +478,7 @@
             div.innerHTML = `
                 <div style="background:#0d0d0d; padding:12px; border-radius:6px; border-left:3px solid #666;">
                     <strong>🎲 NÚMERO ${ultimo}</strong><br>
-                    ✅ Nenhum alvo ou vizinho foi puxado por este número (considerando apenas os últimos 50 números).
+                    ✅ Nenhum alvo ou vizinho foi puxado por este número.
                 </div>
             `;
             return;
@@ -536,7 +500,6 @@
         html += `</div>`;
         div.innerHTML = html;
 
-        // Registrar
         puxadasRegistro.unshift({
             hora: new Date().toLocaleTimeString(),
             numero: ultimo,
@@ -596,10 +559,8 @@
             return;
         }
 
-        // Calcular o índice de início da janela
         const inicioJanela = Math.max(0, historico.length - JANELA_MAX);
         
-        // Mostrar TODOS os números, mas com destaque diferente para os que estão fora da janela
         container.innerHTML = '';
         historico.forEach((num, i) => {
             const isLatest = i === historico.length - 1;
@@ -625,21 +586,6 @@
         atualizarDisplayHistorico();
         analisarUltimoNumero();
         return true;
-    }
-
-    function adicionarEmMassa(texto) {
-        const numeros = texto.split(/[,\s\n]+/).map(v => parseInt(v.trim())).filter(v => !isNaN(v) && v >= 0 && v <= 36);
-        if (numeros.length === 0) {
-            alert('Nenhum número válido encontrado!');
-            return;
-        }
-        for (const num of numeros) {
-            historico.push(num);
-        }
-        salvarHistorico();
-        atualizarDisplayHistorico();
-        analisarUltimoNumero();
-        alert(`${numeros.length} números adicionados ao histórico!`);
     }
 
     function resetar() {
@@ -702,12 +648,6 @@
             const input = document.getElementById('digitarNumero');
             if (input.value !== '') adicionarNumero(input.value);
             input.value = '';
-        };
-        
-        document.getElementById('btnMassa').onclick = () => {
-            const texto = document.getElementById('massNumbers').value;
-            if (texto.trim()) adicionarEmMassa(texto);
-            else alert('Digite os números no campo acima!');
         };
         
         document.getElementById('btnReset').onclick = resetar;
